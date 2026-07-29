@@ -34,6 +34,31 @@ Every error returns the same shape:
 
 ## Which to retry
 
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, -apple-system, sans-serif','fontSize':'14px','primaryColor':'#F4F4F5','primaryTextColor':'#18181B','primaryBorderColor':'#D4D4D8','lineColor':'#A1A1AA','tertiaryColor':'#FAFAFA','clusterBkg':'#FAFAFA','clusterBorder':'#E4E4E7'}}}%%
+flowchart TD
+    E(["Error response"]) --> C{"error.code"}
+
+    C -->|"rate_limited<br/>upstream_error<br/>internal_error"| W["Back off, then retry<br/>with the <b>same</b><br/>Idempotency-Key"]
+    C -->|"insufficient_credit"| T["Top up the balance"]
+    C -->|"spend_cap_reached"| S["Raise the cap<br/>in Settings"]
+    C -->|"invalid_request<br/>not_found"| F["Fix the request.<br/>Retrying will not help"]
+    C -->|"unauthorized<br/>forbidden"| K["Check the key,<br/>or contact us"]
+
+    W --> R(["Retry"])
+
+    classDef billed fill:#FFF1E8,stroke:#FF5500,stroke-width:1.5px,color:#7A2900
+    classDef free fill:#F4F4F5,stroke:#D4D4D8,stroke-width:1.5px,color:#3F3F46
+    classDef stop fill:#FEF2F2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+    classDef good fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#14532D
+    classDef action fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#1E3A8A
+    class W,R good
+    class F,K stop
+    class T,S action
+    class E,C free
+```
+
+
 <CodeGroup>
 ```typescript TypeScript
 const RETRYABLE = new Set(['rate_limited', 'upstream_error', 'internal_error'])

@@ -20,6 +20,41 @@ Dollars rather than an invented credit unit, so you can multiply a price by your
 
 Prices are the same on TikTok and Douyin, even though Douyin costs us more to serve.
 
+## When a call is charged
+
+Every gate runs before any work starts, so a request that cannot be served is
+refused rather than served and billed.
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, -apple-system, sans-serif','fontSize':'14px','primaryColor':'#F4F4F5','primaryTextColor':'#18181B','primaryBorderColor':'#D4D4D8','lineColor':'#A1A1AA','tertiaryColor':'#FAFAFA','clusterBkg':'#FAFAFA','clusterBorder':'#E4E4E7'}}}%%
+flowchart LR
+    R(["Your request"]) --> G1
+
+    subgraph GATES ["Checked in order, before any work starts"]
+        direction TB
+        G1["Valid key<br/><i>else 401</i>"] --> G2["Access enabled<br/><i>else 403</i>"]
+        G2 --> G3["Under rate limit<br/><i>else 429</i>"]
+        G3 --> G4["Under spend cap<br/><i>else 402</i>"]
+        G4 --> G5["Balance above zero<br/><i>else 402</i>"]
+    end
+
+    G5 --> W["Do the work"]
+    W --> OK(["200 with results<br/><b>charged</b>"])
+    W --> EMPTY(["200, nothing found<br/>not charged"])
+    W --> FAIL(["4xx or 5xx<br/>not charged"])
+
+    classDef billed fill:#FFF1E8,stroke:#FF5500,stroke-width:1.5px,color:#7A2900
+    classDef free fill:#F4F4F5,stroke:#D4D4D8,stroke-width:1.5px,color:#3F3F46
+    classDef stop fill:#FEF2F2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+    classDef good fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#14532D
+    class OK billed
+    class EMPTY good
+    class FAIL stop
+    class R,W,G1,G2,G3,G4,G5 free
+```
+
+Every red outcome above costs **nothing**. So does the empty one.
+
 ## What is never charged
 
 - **Failed calls.** Any 4xx or 5xx bills nothing.

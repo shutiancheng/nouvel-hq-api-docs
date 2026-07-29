@@ -28,6 +28,28 @@ Override it when you know your customer's market better than the text does:
 
 Accepted values are `tiktok`, `douyin`, and `auto` (the default).
 
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, -apple-system, sans-serif','fontSize':'14px','primaryColor':'#F4F4F5','primaryTextColor':'#18181B','primaryBorderColor':'#D4D4D8','lineColor':'#A1A1AA','tertiaryColor':'#FAFAFA','clusterBkg':'#FAFAFA','clusterBorder':'#E4E4E7'}}}%%
+flowchart LR
+    S["POST /v1/scan"] --> M{"market<br/>parameter"}
+    M -->|"tiktok<br/>or douyin"| E["Used as given"]
+    M -->|"auto,<br/>or omitted"| I["Inferred from the query:<br/>its language, and any<br/>location it implies"]
+
+    P["POST /v1/playbook<br/>POST /v1/music"] --> U["Read off the<br/>URL you passed"]
+
+    E --> R(["The market<br/>for this call"])
+    I --> R
+    U --> R
+
+    classDef billed fill:#FFF1E8,stroke:#FF5500,stroke-width:1.5px,color:#7A2900
+    classDef free fill:#F4F4F5,stroke:#D4D4D8,stroke-width:1.5px,color:#3F3F46
+    classDef stop fill:#FEF2F2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+    classDef good fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#14532D
+    classDef action fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#1E3A8A
+    class R billed
+    class S,P,M,E,I,U free
+```
+
 **On `/v1/playbook` and `/v1/music`**, it is read from the URL you pass. There is no parameter, because the reel itself already settles the question.
 
 ## Languages

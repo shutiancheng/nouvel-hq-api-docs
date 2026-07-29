@@ -31,14 +31,28 @@ Access is invite-only. If your account has not been granted API access, every en
 Most integrations follow one shape. A user types something, you ask Assist what it means, and Assist tells you which endpoint to call next.
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-sans-serif, system-ui, -apple-system, sans-serif','fontSize':'14px','primaryColor':'#F4F4F5','primaryTextColor':'#18181B','primaryBorderColor':'#D4D4D8','lineColor':'#A1A1AA','tertiaryColor':'#FAFAFA','clusterBkg':'#FAFAFA','clusterBorder':'#E4E4E7'}}}%%
 flowchart LR
-  A["User message"] --> B["POST /v1/assist"]
-  B -->|intent: chat| C["Show the reply"]
-  B -->|intent: scan| D["POST /v1/scan"]
-  D --> E["Reels"]
-  E --> F["POST /v1/playbook"]
-  E --> G["POST /v1/music"]
+    U(["User message"]) --> A["POST /v1/assist<br/><b>$0.01</b>"]
+
+    A -->|"intent: chat"| C(["Show the reply"])
+    A -->|"intent: scan"| S["POST /v1/scan<br/><b>$0.15</b>"]
+
+    S --> R[("Reels")]
+    R --> P["POST /v1/playbook<br/><b>$0.20</b>"]
+    R --> M["POST /v1/music<br/><b>$0.25</b>"]
+
+    classDef billed fill:#FFF1E8,stroke:#FF5500,stroke-width:1.5px,color:#7A2900
+    classDef free fill:#F4F4F5,stroke:#D4D4D8,stroke-width:1.5px,color:#3F3F46
+    classDef stop fill:#FEF2F2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+    classDef good fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#14532D
+    class A,S,P,M billed
+    class U,C,R free
 ```
+
+<Note>
+Orange steps cost credit. **You** decide when to take each one: Assist tells you what it thinks comes next and stops there, so nothing is ever billed without an explicit call from you.
+</Note>
 
 **Assist never executes anything.** It returns the call it thinks you should make and stops there, so you decide whether to spend the credit. A misclassification costs you a cent, not a scan.
 
