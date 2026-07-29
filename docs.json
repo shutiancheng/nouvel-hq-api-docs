@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "Nouvel API",
   "colors": {
-    "primary": "#ff5500",
-    "light": "#ff7733",
-    "dark": "#cc4400"
+    "primary": "#000000",
+    "light": "#ffffff",
+    "dark": "#000000"
   },
   "favicon": "/favicon.svg",
   "navigation": {
