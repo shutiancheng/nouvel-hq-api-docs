@@ -1,55 +1,41 @@
-# Mintlify Starter Kit
+# Nouvel API docs
 
-Use the starter kit to get your docs deployed and ready to customize.
+Public documentation for the Nouvel `/v1` API, published with Mintlify.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+## This repo is public
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+Everything here is world readable. The app repo's `docs/` directory is **not**
+part of this repo and must never be copied into it: it holds
+`unit-economics-audit.md` and `api-margin-analysis.md`, which contain COGS,
+margins and provider pricing.
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+Keeping the docs in their own repo is the reason that cannot happen by accident.
 
-## AI-assisted writing
+## Local preview
 
-Set up your AI coding tool to work with Mintlify:
-
-```bash
-npx skills add https://mintlify.com/docs
-```
-
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
-
-See the [AI tools guides](/ai-tools) for tool-specific setup.
-
-## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
-```
+```sh
 npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
 mint dev
 ```
 
-View your local preview at `http://localhost:3000`.
+Opens on http://localhost:3000.
 
-## Publishing changes
+## Deploying
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+Mintlify is connected to this repo on the `main` branch, with `docs.json` at the
+root. Push to `main` and it redeploys. Leave **"docs.json is in a subdirectory"**
+off in Git settings.
 
-## Need help?
+## Keeping it accurate
 
-### Troubleshooting
+Prices, rate limits, error codes and languages are duplicated here from the app
+repo. Nothing enforces that they stay in sync, so when any of these change,
+update the matching page.
 
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+| Source of truth (in `nouvelhq`) | Page here |
+|---|---|
+| `src/lib/api/pricing.ts` | `billing.mdx`, `index.mdx` |
+| `KEY_LIMITS` in `src/lib/api/request.ts` | `rate-limits.mdx` |
+| `ApiErrorCode` in `src/lib/api/request.ts` | `errors.mdx` |
+| `OutputLanguage` in `src/lib/analysis/language.ts` | `markets.mdx` |
+| `CREDIT_PACKS` in `src/lib/billing/credit-packs.ts` | `billing.mdx` |

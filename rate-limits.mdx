@@ -1,0 +1,42 @@
+---
+title: "Rate limits"
+description: "Per-key and per-customer ceilings."
+---
+
+## Per key
+
+| Endpoint | Limit |
+|---|---|
+| `/v1/scan` | 60 requests / minute |
+| `/v1/playbook` | 60 requests / minute |
+| `/v1/music` | 60 requests / minute |
+| `/v1/assist` | 600 requests / minute |
+
+Exceeding a limit returns `429 rate_limited`.
+
+## Per end customer
+
+Send `X-Subject` and each distinct value gets **a tenth** of the key's budget for that endpoint. So 6 scans a minute per customer against a key allowing 60.
+
+This exists so one customer of yours cannot exhaust the key and take down your other customers. Both ceilings apply: the subject limit first, then the key limit.
+
+## Sustained throughput is lower than the burst limit
+
+<Warning>
+These are burst ceilings, not a throughput guarantee.
+</Warning>
+
+A scan takes 20 to 30 seconds of wall clock and a playbook 50 to 90, so sustained throughput is bounded by how long the work takes and by upstream provider capacity, well before the limiter is what stops you.
+
+If you need a committed sustained rate, talk to us rather than reading these numbers as a contract.
+
+## Handling 429
+
+Back off exponentially and retry. Rate limit windows are 60 seconds, so a wait of a few seconds is usually enough.
+
+```typescript
+if (response.status === 429) {
+  await new Promise((r) => setTimeout(r, 5_000))
+  // retry with the same Idempotency-Key
+}
+```

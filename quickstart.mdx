@@ -1,47 +1,87 @@
 ---
 title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+description: "From an API key to your first scan in about two minutes."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
+## 1. Get a key
 
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+Sign in to Nouvel, open **Settings → API**, and create a key.
 
-## Prerequisites
+<Warning>
+The key is shown **once**, at creation. We store a hash, not the key, so a lost key cannot be recovered and has to be replaced.
+</Warning>
 
-Before you begin, you must have:
+If you do not see an API tab, your account has not been granted access yet.
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+## 2. Add credit
 
-## Get started
+The API is prepaid. Buy credit from **Settings → API → Add to balance**.
 
-<Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+A request against an empty balance returns `402 insufficient_credit` before any work is done, so you are never charged for a call that could not run.
 
-    ```bash
-    npm install your-package
-    ```
-  </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+## 3. Make a call
 
-    ```bash
-    your-cli init
-    ```
-  </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+<CodeGroup>
+```bash cURL
+curl -X POST https://nouvelhq.com/api/v1/scan \
+  -H "Authorization: Bearer $NOUVEL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "skincare routine for oily skin", "limit": 5}'
+```
 
-    ```bash
-    your-cli start
-    ```
-  </Step>
-</Steps>
+```typescript TypeScript
+const response = await fetch('https://nouvelhq.com/api/v1/scan', {
+  method: 'POST',
+  headers: {
+    authorization: `Bearer ${process.env.NOUVEL_API_KEY}`,
+    'content-type': 'application/json',
+  },
+  body: JSON.stringify({ query: 'skincare routine for oily skin', limit: 5 }),
+})
+
+const { reels, market } = await response.json()
+console.log(`${reels.length} reels from ${market}`)
+console.log('charged', response.headers.get('x-nouvel-charged-usd'))
+```
+
+```python Python
+import os, requests
+
+response = requests.post(
+    "https://nouvelhq.com/api/v1/scan",
+    headers={"Authorization": f"Bearer {os.environ['NOUVEL_API_KEY']}"},
+    json={"query": "skincare routine for oily skin", "limit": 5},
+)
+data = response.json()
+print(len(data["reels"]), "reels from", data["market"])
+print("charged", response.headers["x-nouvel-charged-usd"])
+```
+</CodeGroup>
+
+A scan takes roughly 20 to 30 seconds. Set your client timeout to at least 90 seconds.
+
+## 4. Watch what it cost
+
+Every successful response carries the charge and the balance left:
+
+```
+x-nouvel-charged-usd: 0.037500
+x-nouvel-balance-usd: 99.962500
+```
+
+You never need a second call to check your balance.
+
+## Timeouts to configure
+
+Analysis work is genuinely slow. These are the ceilings the API itself enforces, so your client should allow at least as much.
+
+| Endpoint | Typical | Set client timeout to |
+|---|---|---|
+| `/v1/assist` | under 1s | 30s |
+| `/v1/scan` | 20 to 30s | 90s |
+| `/v1/playbook` | 50 to 90s | 300s |
+| `/v1/music` | 35s warm, up to 150s cold | 300s |
 
 <Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
-
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+Music is slow the first time it meets an unfamiliar niche, because it has to listen to sounds it has never heard. Those results are cached permanently, so the same niche is much faster afterwards.
 </Tip>

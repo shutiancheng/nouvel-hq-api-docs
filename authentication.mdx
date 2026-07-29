@@ -1,0 +1,64 @@
+---
+title: "Authentication"
+description: "Bearer keys, subject scoping, and idempotency."
+---
+
+## Bearer keys
+
+Every request needs your key in the `Authorization` header:
+
+```bash
+curl -H "Authorization: Bearer nvl_xxxxxxxxxxxx" ...
+```
+
+A missing or invalid key returns `401 unauthorized`. An account whose API access has been revoked returns `403 forbidden`, **even with a key that still verifies**. Access is re-checked on every request, so revocation takes effect immediately rather than at the next key rotation.
+
+## Keys
+
+You can hold up to **5 keys at once**. Use separate keys for staging and production so you can revoke one without taking the other down.
+
+Keys are shown once at creation and stored as a hash. Revoking is immediate.
+
+## Optional headers
+
+### `X-Subject`
+
+If you resell to your own customers, pass an identifier for the end user:
+
+```bash
+-H "X-Subject: customer_abc123"
+```
+
+This buys you **per-customer rate limiting**: each subject gets a tenth of your key's budget, so one runaway customer cannot consume your whole allowance and take down everyone else on the same key.
+
+<Note>
+We do not store this value. It is used to scope a rate-limit counter and nothing else. It is your customer's identifier, and we have no reason to hold it.
+</Note>
+
+### `Idempotency-Key`
+
+If your client retries on timeout, send a unique key per logical request:
+
+```bash
+-H "Idempotency-Key: 7c9e6679-7425-40de-944b-e07fc1f90ae7"
+```
+
+A repeat of the same key returns the original outcome, **charges nothing**, and sets:
+
+```
+x-nouvel-charged-usd: 0
+x-nouvel-idempotent-replay: true
+```
+
+Without it, a timed-out request that actually succeeded server-side will be charged twice if you retry.
+
+## Keeping keys safe
+
+<Warning>
+A Nouvel key carries your balance. Anyone holding it can spend your credit.
+</Warning>
+
+- Never ship a key in browser or mobile client code. Call the API from your server.
+- Store it in your secrets manager, not in source control.
+- Rotate by creating a new key, deploying, then revoking the old one. Both work at once, so there is no gap.
+- Set a **monthly spend cap** in Settings. It is the only hard stop if a key leaks or a loop misbehaves.

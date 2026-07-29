@@ -1,0 +1,87 @@
+---
+title: "Assist"
+description: "POST /v1/assist: classify a message and get the call to make next."
+---
+
+Decides whether a user's message is a scan request, ordinary conversation, or something to decline. When it is a scan, you also get a self-contained query to run.
+
+**$0.01 per call.** Calls no provider and reserves no credit beyond its own price.
+
+<Note>
+Assist **never executes** the call it suggests. You decide whether to spend the credit. That means a misclassification costs you a cent rather than the price of a scan, and nothing on your bill ever appears without an explicit call from you.
+</Note>
+
+## Request
+
+<ParamField body="message" type="string" required>
+  The user's message. Max 2,000 characters.
+</ParamField>
+
+<ParamField body="history" type="array">
+  Prior turns for context, most recent last. Only the last 10 are used. Each entry is `{ "role": "user" | "agent", "text": string }`.
+</ParamField>
+
+## Response
+
+<ResponseField name="intent" type="string">
+  One of `scan`, `chat`, or `refuse`.
+</ResponseField>
+
+<ResponseField name="reply" type="string">
+  A conversational reply to show the user. Present for every intent.
+</ResponseField>
+
+<ResponseField name="query" type="string">
+  Present only when `intent` is `scan`. A self-contained query with the conversation's context folded in, ready to pass straight to `/v1/scan`.
+</ResponseField>
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://nouvelhq.com/api/v1/assist \
+  -H "Authorization: Bearer $NOUVEL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "show me more like that but for skincare",
+    "history": [
+      { "role": "user", "text": "find me viral fitness reels" },
+      { "role": "agent", "text": "Found 20 fitness reels ranked by traction." }
+    ]
+  }'
+```
+
+```typescript TypeScript
+const assist = await fetch('https://nouvelhq.com/api/v1/assist', {
+  method: 'POST',
+  headers: {
+    authorization: `Bearer ${process.env.NOUVEL_API_KEY}`,
+    'content-type': 'application/json',
+  },
+  body: JSON.stringify({ message, history }),
+}).then((r) => r.json())
+
+if (assist.intent === 'scan') {
+  // You choose to spend the credit.
+  const scan = await runScan(assist.query)
+} else {
+  showReply(assist.reply)
+}
+```
+</CodeGroup>
+
+```json Response
+{
+  "intent": "scan",
+  "reply": "On it, looking for skincare reels with the same format.",
+  "query": "viral skincare routine reels with fast cuts and a spoken hook"
+}
+```
+
+## Intents
+
+| Intent | Meaning | What to do |
+|---|---|---|
+| `scan` | The user wants reels | Show `reply`, then call `/v1/scan` with `query` |
+| `chat` | Conversational, no scan needed | Show `reply` |
+| `refuse` | Out of scope or not something we will answer | Show `reply` |

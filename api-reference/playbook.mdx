@@ -1,0 +1,122 @@
+---
+title: "Playbook"
+description: "POST /v1/playbook: frame-level breakdown of one reel, with a shot list."
+---
+
+Watches a video and returns a shoot-ready plan: the transcript, the hook, a scene map, a remake script, a shot list, editing guidance and experiments to try.
+
+**$0.20 per call.** Typically 50 to 90 seconds. Set your client timeout to 300 seconds.
+
+## Request
+
+<ParamField body="url" type="string" required>
+  Link to the video. TikTok, Douyin, Instagram Reels and YouTube Shorts are accepted, including short share links.
+</ParamField>
+
+<ParamField body="language" type="string">
+  `en`, `zh-Hans`, or `zh-Hant`. Defaults to the video's market: **Douyin videos come back in Simplified Chinese**, everything else in English. See [Markets](/markets).
+</ParamField>
+
+## Response
+
+<ResponseField name="reel" type="object">
+  What was analyzed.
+
+  <Expandable title="reel">
+    <ResponseField name="id" type="string">Provider id, namespaced for non-TikTok platforms.</ResponseField>
+    <ResponseField name="url" type="string">Canonical permalink.</ResponseField>
+    <ResponseField name="market" type="string">`tiktok` or `douyin`.</ResponseField>
+    <ResponseField name="authorHandle" type="string | null">Creator handle.</ResponseField>
+    <ResponseField name="caption" type="string | null">Post caption.</ResponseField>
+    <ResponseField name="durationSec" type="number | null">Full runtime.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="language" type="string">
+  The language the playbook was written in.
+</ResponseField>
+
+<ResponseField name="analyzedSeconds" type="number | null">
+  How many seconds were actually watched. Videos longer than 120 seconds are clipped to the first 120 rather than rejected.
+</ResponseField>
+
+<ResponseField name="playbook" type="object">
+  The document itself.
+
+  <Expandable title="playbook">
+    <ResponseField name="version" type="number">Schema version. Currently `2`.</ResponseField>
+    <ResponseField name="overview" type="object">What the video is and who it is for.</ResponseField>
+    <ResponseField name="hook" type="object">The opening and why it holds attention.</ResponseField>
+    <ResponseField name="transcript" type="object">Timestamped spoken content.</ResponseField>
+    <ResponseField name="scenes" type="array">Scene-by-scene map with timings.</ResponseField>
+    <ResponseField name="overlays" type="array">On-screen text and when it appears.</ResponseField>
+    <ResponseField name="pacing" type="object">Cut rhythm and duration.</ResponseField>
+    <ResponseField name="format" type="object">The repeatable format underneath this specific video.</ResponseField>
+    <ResponseField name="playbook" type="object">The remake plan: script, shot list, setup, editing guide, caption, CTA.</ResponseField>
+    <ResponseField name="experiments" type="array">Variations worth testing.</ResponseField>
+    <ResponseField name="caveats" type="array">What would not transfer to a different brand.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://nouvelhq.com/api/v1/playbook \
+  -H "Authorization: Bearer $NOUVEL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.tiktok.com/@creator/video/7412345678901234567"}'
+```
+
+```bash Douyin, Simplified Chinese by default
+curl -X POST https://nouvelhq.com/api/v1/playbook \
+  -H "Authorization: Bearer $NOUVEL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.douyin.com/video/7615947954167303458"}'
+```
+
+```typescript TypeScript
+const playbook = await fetch('https://nouvelhq.com/api/v1/playbook', {
+  method: 'POST',
+  headers: {
+    authorization: `Bearer ${process.env.NOUVEL_API_KEY}`,
+    'content-type': 'application/json',
+  },
+  body: JSON.stringify({ url: reelUrl, language: 'zh-Hant' }),
+  signal: AbortSignal.timeout(300_000),
+}).then((r) => r.json())
+```
+</CodeGroup>
+
+```json Response (truncated)
+{
+  "reel": {
+    "id": "7412345678901234567",
+    "url": "https://www.tiktok.com/@creator/video/7412345678901234567",
+    "market": "tiktok",
+    "authorHandle": "creator",
+    "caption": "the only routine that fixed my oily skin",
+    "durationSec": 28
+  },
+  "language": "en",
+  "analyzedSeconds": 28,
+  "playbook": {
+    "version": 2,
+    "tier": "advanced",
+    "hook": { "text": "Stop using mattifying products", "why": "Contradicts the obvious advice" },
+    "scenes": [{ "start": 0, "end": 3, "description": "Close-up on the product, no speech" }],
+    "playbook": {
+      "script": [{ "t": 0, "line": "Stop using mattifying products." }],
+      "shotList": ["0-3s: product close-up, handheld, window light"],
+      "caption": "The routine that actually worked",
+      "cta": "Comment ROUTINE and I'll send the list"
+    }
+  }
+}
+```
+
+## Notes
+
+- **Every API playbook is full depth.** There is no reduced tier out here.
+- **Videos over 120 seconds are clipped**, never rejected. `analyzedSeconds` tells you what was covered, and nothing in the document describes footage beyond it.
+- **Unsupported links return `400 invalid_request`**; a valid link to a missing or video-less post returns `404 not_found`.

@@ -1,0 +1,115 @@
+---
+title: "Scan"
+description: "POST /v1/scan: up to 20 ranked reels for one brief."
+---
+
+Searches TikTok or Douyin for reels matching a brief, filters them for relevance, and returns them ranked by traction.
+
+**$0.15 for a full delivery of 20 reels**, charged pro rata below that. Typically 20 to 30 seconds.
+
+## Request
+
+<ParamField body="query" type="string" required>
+  What you are looking for, in plain language. Max 2,000 characters. Can be a niche ("skincare for oily skin"), a product description, or a request naming competitors.
+</ParamField>
+
+<ParamField body="market" type="string" default="auto">
+  `tiktok`, `douyin`, or `auto`. On `auto` the market is inferred from the query's language and any location it implies. See [Markets](/markets).
+</ParamField>
+
+<ParamField body="limit" type="number" default="20">
+  How many reels to return, 1 to 20. Lower values cost proportionally less.
+</ParamField>
+
+## Response
+
+<ResponseField name="market" type="string">
+  Which network was searched, `tiktok` or `douyin`.
+</ResponseField>
+
+<ResponseField name="niche" type="string">
+  A short human label for what was searched.
+</ResponseField>
+
+<ResponseField name="queries" type="string[]">
+  The search phrases actually run against the provider.
+</ResponseField>
+
+<ResponseField name="reels" type="object[]">
+  The delivered reels, ordered by play count.
+
+  <Expandable title="reel">
+    <ResponseField name="id" type="string">Provider id. Douyin ids are namespaced `douyin:<id>`.</ResponseField>
+    <ResponseField name="url" type="string">Canonical permalink.</ResponseField>
+    <ResponseField name="coverUrl" type="string | null">Thumbnail. Expires; do not store it long term.</ResponseField>
+    <ResponseField name="authorHandle" type="string | null">Creator handle.</ResponseField>
+    <ResponseField name="authorName" type="string | null">Creator display name.</ResponseField>
+    <ResponseField name="caption" type="string | null">Post caption.</ResponseField>
+    <ResponseField name="playCount" type="number">Views.</ResponseField>
+    <ResponseField name="likeCount" type="number">Likes.</ResponseField>
+    <ResponseField name="commentCount" type="number">Comments.</ResponseField>
+    <ResponseField name="shareCount" type="number">Shares.</ResponseField>
+    <ResponseField name="durationSec" type="number | null">Runtime in seconds.</ResponseField>
+    <ResponseField name="postedAt" type="string | null">ISO 8601 timestamp.</ResponseField>
+    <ResponseField name="relevance" type="object | null">`{ score, reason }`. Score 0 to 10 from the relevance pass. Null when the reranker was unavailable.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="degraded" type="boolean">
+  True when the relevance pass could not run and results are ordered by traction alone. The reels are real either way; the ranking is less precise.
+</ResponseField>
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://nouvelhq.com/api/v1/scan \
+  -H "Authorization: Bearer $NOUVEL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "skincare routine for oily skin", "limit": 5}'
+```
+
+```typescript TypeScript
+const scan = await fetch('https://nouvelhq.com/api/v1/scan', {
+  method: 'POST',
+  headers: {
+    authorization: `Bearer ${process.env.NOUVEL_API_KEY}`,
+    'content-type': 'application/json',
+    'x-subject': customerId,
+  },
+  body: JSON.stringify({ query: 'skincare routine for oily skin', limit: 5 }),
+}).then((r) => r.json())
+```
+</CodeGroup>
+
+```json Response
+{
+  "market": "tiktok",
+  "niche": "oily skin skincare",
+  "queries": ["oily skin routine", "skincare for oily skin", "mattifying routine"],
+  "reels": [
+    {
+      "id": "7412345678901234567",
+      "url": "https://www.tiktok.com/@creator/video/7412345678901234567",
+      "coverUrl": "https://p16-sign.tiktokcdn.com/...",
+      "authorHandle": "creator",
+      "authorName": "Skincare Daily",
+      "caption": "the only routine that fixed my oily skin",
+      "playCount": 2410000,
+      "likeCount": 189000,
+      "commentCount": 2430,
+      "shareCount": 15200,
+      "durationSec": 28,
+      "postedAt": "2026-06-14T09:12:00.000Z",
+      "relevance": { "score": 9, "reason": "Direct oily-skin routine with a spoken hook" }
+    }
+  ],
+  "degraded": false
+}
+```
+
+## Notes
+
+- **An empty result is a `200`**, with `reels: []` and no charge. It means nothing matched, not that the request failed.
+- **Cover and media URLs expire**, usually within hours. Fetch them promptly or re-scan.
+- **`limit` lowers the price** proportionally, so ask for what you will actually show.

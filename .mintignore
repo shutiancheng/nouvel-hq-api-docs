@@ -5,3 +5,8 @@
 # Draft content
 drafts/
 *.draft.mdx
+
+# Internal analyses must never be published. These live in the app repo
+# (nouvelhq/docs/) and contain COGS, margins and provider pricing.
+unit-economics-audit.md
+api-margin-analysis.md

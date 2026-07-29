@@ -1,0 +1,116 @@
+---
+title: "Music"
+description: "POST /v1/music: sound recommendations matched to one video."
+---
+
+Watches a video, works out what it should sound like, then searches and scores real sounds from that video's own network.
+
+**$0.25 per call.** 35 seconds against a familiar niche, up to 150 seconds the first time it meets an unfamiliar one.
+
+<Note>
+The catalogue is chosen by the video's network, not by a parameter. A Douyin creator cannot place a TikTok sound and vice versa, so a suggestion from the wrong catalogue would be impossible to act on rather than merely weak.
+</Note>
+
+## Request
+
+<ParamField body="url" type="string" required>
+  Link to the video to match sounds against.
+</ParamField>
+
+<ParamField body="limit" type="number" default="10">
+  How many suggestions to return, 1 to 20. **Does not change the price**: cost is set by how many sounds are listened to and judged, which is fixed.
+</ParamField>
+
+<ParamField body="requireCommercial" type="boolean" default="false">
+  Restrict to Commercial Music Library tracks. Set this for business accounts, which can only legally use cleared audio.
+</ParamField>
+
+## Response
+
+<ResponseField name="market" type="string">
+  Which catalogue was searched, `tiktok` or `douyin`.
+</ResponseField>
+
+<ResponseField name="video" type="object">
+  `{ id, url, durationSec }` for the video analyzed.
+</ResponseField>
+
+<ResponseField name="suggestions" type="object[]">
+  Ranked sounds, best fit first.
+
+  <Expandable title="suggestion">
+    <ResponseField name="soundId" type="string">Sound id. Douyin ids are namespaced `douyin:<id>`.</ResponseField>
+    <ResponseField name="title" type="string | null">Sound title.</ResponseField>
+    <ResponseField name="author" type="string | null">Track artist or original creator.</ResponseField>
+    <ResponseField name="coverUrl" type="string | null">Artwork.</ResponseField>
+    <ResponseField name="previewUrl" type="string | null">Streamable audio. Expires within hours.</ResponseField>
+    <ResponseField name="tiktokUrl" type="string">Link to the sound on its platform.</ResponseField>
+    <ResponseField name="durationSec" type="number | null">Full track length.</ResponseField>
+    <ResponseField name="shootDurationSec" type="number | null">The slice usable in an edit.</ResponseField>
+    <ResponseField name="vibe" type="object | null">Structured reading of the audio: tempo, energy, mood.</ResponseField>
+    <ResponseField name="trend" type="object">Usage trajectory, so you can tell a rising sound from a fading one.</ResponseField>
+    <ResponseField name="commercial" type="object">Commercial Music Library status and rights flags.</ResponseField>
+    <ResponseField name="fit" type="object">Why this sound suits this video, with a score.</ResponseField>
+    <ResponseField name="finalScore" type="number">Ranking key. Fit dominant, with a bounded trend bonus.</ResponseField>
+    <ResponseField name="warnings" type="string[]">Caveats worth surfacing, never errors.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="considered" type="number">
+  How many sounds were scored to produce this list.
+</ResponseField>
+
+<ResponseField name="notes" type="string[]">
+  Honest notes about the run, for example when the pool was thinner than usual.
+</ResponseField>
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://nouvelhq.com/api/v1/music \
+  -H "Authorization: Bearer $NOUVEL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.douyin.com/video/7615947954167303458", "limit": 5}'
+```
+
+```typescript TypeScript
+const music = await fetch('https://nouvelhq.com/api/v1/music', {
+  method: 'POST',
+  headers: {
+    authorization: `Bearer ${process.env.NOUVEL_API_KEY}`,
+    'content-type': 'application/json',
+  },
+  body: JSON.stringify({ url, limit: 5, requireCommercial: true }),
+  signal: AbortSignal.timeout(300_000),
+}).then((r) => r.json())
+```
+</CodeGroup>
+
+```json Response (truncated)
+{
+  "market": "douyin",
+  "video": { "id": "douyin:7615947954167303458", "url": "https://www.douyin.com/video/7615947954167303458", "durationSec": 28 },
+  "suggestions": [
+    {
+      "soundId": "douyin:7444264218973898762",
+      "title": "活力四射energetic",
+      "author": "阿祥",
+      "durationSec": 108,
+      "shootDurationSec": 60,
+      "fit": { "score": 8, "why": "Matches the fast cuts and the upbeat close" },
+      "finalScore": 8.4,
+      "warnings": []
+    }
+  ],
+  "considered": 17,
+  "notes": []
+}
+```
+
+## Notes
+
+- **First call in a new niche is slow.** Sounds we have never heard have to be listened to. Those readings are cached permanently, so the same niche is much faster afterwards.
+- **No usable sound is a `200`** with an empty array and no charge.
+- **Preview URLs expire**, usually within hours.
+- **On Douyin there is no genre metadata** to draw on, so fit is judged from the audio itself.
